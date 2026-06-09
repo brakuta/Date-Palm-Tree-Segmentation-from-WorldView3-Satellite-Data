@@ -18,7 +18,6 @@ model.
 """
 from __future__ import annotations
 
-import os
 import os.path as osp
 from typing import Optional, Tuple
 
@@ -45,6 +44,26 @@ def _strip_state_dict(ckpt: dict) -> dict:
     if isinstance(ckpt, dict) and 'state_dict' in ckpt:
         return ckpt['state_dict']
     return ckpt
+
+
+def _is_safetensors(path: str) -> bool:
+    return path.lower().endswith('.safetensors')
+
+
+def load_state_dict_any(checkpoint_path: str) -> dict:
+    """Read a flat parameter dict from a ``.pth`` or ``.safetensors`` file.
+
+    safetensors files are tensor-only (no pickle, no executable payload), which
+    is why the released weights are published in that format. A ``.pth`` file is
+    still accepted for local/legacy checkpoints.
+    """
+    if _is_safetensors(checkpoint_path):
+        from safetensors.torch import load_file
+        return load_file(checkpoint_path)            # already a flat dict
+    # Legacy .pth: weights_only=False is needed for mmengine checkpoints whose
+    # meta holds pickled objects. Released weights ship as safetensors above.
+    ckpt = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    return _strip_state_dict(ckpt)
 
 
 def _find_stem_in_channels(state_dict: dict) -> Optional[int]:
@@ -100,8 +119,8 @@ def inspect_checkpoint(checkpoint_path: str) -> dict:
 
     Keys: in_channels, num_classes, modality ('ms' | 'rgb' | 'unknown').
     """
-    ckpt = torch.load(checkpoint_path, map_location='cpu')
-    sd = _strip_state_dict(ckpt)
+    ckpt_sd = load_state_dict_any(checkpoint_path)
+    sd = _strip_state_dict(ckpt_sd)
     in_ch = _find_stem_in_channels(sd)
     n_cls = _find_head_num_classes(sd)
     if in_ch == 3:
@@ -211,7 +230,20 @@ def load_palm_model(checkpoint_path: str,
         raise FileNotFoundError(f'Checkpoint not found: {checkpoint_path}')
     init_default_scope('mmseg')
     cfg, info = build_inference_config(checkpoint_path, config_path, override)
-    model = init_model(cfg, checkpoint_path, device=device)
+
+    if _is_safetensors(checkpoint_path):
+        # safetensors holds raw tensors only and cannot be passed to
+        # init_model's pickle-based loader. Build the architecture first, then
+        # load the parameter dict explicitly.
+        from mmengine.runner.checkpoint import load_state_dict
+        model = init_model(cfg, None, device=device)
+        state = load_state_dict_any(checkpoint_path)
+        load_state_dict(model, state, strict=False)
+        from palmseg.datasets.palm_dataset import PALM_CLASSES, PALM_PALETTE
+        model.dataset_meta = dict(classes=PALM_CLASSES, palette=PALM_PALETTE)
+        model.to(device).eval()
+    else:
+        model = init_model(cfg, checkpoint_path, device=device)
     # Stash what we detected so downstream code (heatmap class index, band
     # count) can rely on it without re-opening the checkpoint.
     model.cfg_info = info

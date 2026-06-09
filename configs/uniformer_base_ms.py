@@ -1,7 +1,11 @@
-# Auto-generated canonical config: UniFormer-Base + FPN
-# Modality: multispectral (8-band). num_classes/in_channels are reconciled to the
-# checkpoint at load time by palmseg.loader; the values here are the training
-# defaults. Edit num_classes for N-class fine-tuning.
+# UniFormer-Base + FPN (the "fpn_global_base" run). Modality: multispectral (8-band).
+# Backbone values are taken from the training config that produced
+# uniformer_fpn_global_ms.safetensors. num_classes / in_channels / preprocessor
+# are reconciled to the checkpoint at load time by palmseg.loader.
+#
+# NOTE: UniFormer is a CUSTOM backbone, not part of stock MMSegmentation. The
+# UniFormer backbone module must be registered in your MMSeg install for this
+# config to build (see docs/MODELS.md).
 _base_ = [
     '_base_/palm_dataset_ms.py',
     '_base_/default_runtime.py',
@@ -11,8 +15,6 @@ num_classes = 2
 crop_size = (512, 512)
 norm_cfg = dict(type='SyncBN', requires_grad=True)
 
-# NOTE: requires the UniFormer backbone module registered in MMSeg
-# (see docs/MODELS.md). FPN neck + FPNHead as in the released config.
 model = dict(
     type='EncoderDecoder',
     data_preprocessor=dict(
@@ -23,7 +25,7 @@ model = dict(
         type='UniFormer', in_chans=8,
         embed_dim=[64, 128, 320, 512], layers=[5, 8, 20, 7], head_dim=64,
         mlp_ratio=4.0, qkv_bias=True, drop_rate=0.0, attn_drop_rate=0.0,
-        drop_path_rate=0.3, hybrid=False, windows=False, use_checkpoint=False),
+        drop_path_rate=0.2, hybrid=False, windows=False, use_checkpoint=False),
     neck=dict(type='FPN', in_channels=[64, 128, 320, 512], out_channels=256,
               num_outs=4),
     decode_head=dict(

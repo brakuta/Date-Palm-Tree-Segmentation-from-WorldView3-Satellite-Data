@@ -2,18 +2,20 @@
 """Manifest of released palm WV-3 models and a Hugging Face download helper.
 
 Each entry maps a short model id -> (config file, checkpoint filename,
-modality). The Hugging Face repo id is a placeholder to be set once the
-weights are uploaded; the download helper resolves files from it.
+modality, family, heatmap capability). Weights are published as ``.safetensors``
+(tensor-only, no pickle), which is the format the Hugging Face security scanner
+reports as safe and which ``palmseg.loader`` loads directly.
 
-Fill HF_REPO_ID after creating the model repo, e.g.:
-    huggingface-cli repo create palm-wv3-models --type model
-and upload the .pth files with the names in CHECKPOINTS below.
+To (re)publish weights: convert the trained ``.pth`` checkpoints with
+``python scripts/to_safetensors.py weights/`` and upload the resulting
+``.safetensors`` files under the names below. Set ``HF_REPO_ID`` to the model
+repo once created.
 """
 from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Optional
 
 # <-- set this to your uploaded HF model repo, e.g. 'mbgibril/palm-wv3-models'
 HF_REPO_ID = 'brakuta/date-palm-wv3-models'
@@ -29,62 +31,55 @@ class ModelEntry:
 
 
 MODELS: Dict[str, ModelEntry] = {
-    # --- multispectral (8-band) ---
-    'segformer_b5_ms':      ModelEntry('configs/segformer_b5_ms.py',
-                                       'segformer_b5_ms.pth', 'ms',
-                                       'segformer', True),
-    'upernet_swin_b_ms':    ModelEntry('configs/upernet_swin_b_ms.py',
-                                       'upernet_swin_b_ms.pth', 'ms',
-                                       'upernet_swin', True),
-    'upernet_vit_deit_s_ms': ModelEntry('configs/upernet_vit_deit_s_ms.py',
-                                        'upernet_vit_deit_s_ms.pth', 'ms',
-                                        'upernet_vit', True),
-    'uniformer_base_ms':    ModelEntry('configs/uniformer_base_ms.py',
-                                       'uniformer_base_ms.pth', 'ms',
-                                       'uniformer', True),
-    'mask2former_swin_s_ms': ModelEntry('configs/mask2former_swin_s_ms.py',
-                                        'mask2former_swin_s_ms.pth', 'ms',
-                                        'mask2former', False),
-    # --- RGB ---
-    'segformer_b5_rgb':     ModelEntry('configs/segformer_b5_rgb.py',
-                                       'segformer_b5_rgb.pth', 'rgb',
-                                       'segformer', True),
-    'upernet_swin_b_rgb':   ModelEntry('configs/upernet_swin_b_rgb.py',
-                                       'upernet_swin_b_rgb.pth', 'rgb',
-                                       'upernet_swin', True),
+    # === multispectral (8-band) ============================================
+    'segformer_b3_ms':        ModelEntry('configs/segformer_b3_ms.py',
+                                         'segformer_b3_ms.safetensors', 'ms',
+                                         'segformer', True),
+    'segformer_b5_ms':        ModelEntry('configs/segformer_b5_ms.py',
+                                         'segformer_b5_ms.safetensors', 'ms',
+                                         'segformer', True),
+    'upernet_swin_s_ms':      ModelEntry('configs/upernet_swin_s_ms.py',
+                                         'upernet_swin_s_ms.safetensors', 'ms',
+                                         'upernet_swin', True),
+    'upernet_swin_b_ms':      ModelEntry('configs/upernet_swin_b_ms.py',
+                                         'upernet_swin_b_ms.safetensors', 'ms',
+                                         'upernet_swin', True),
+    'upernet_vit_deit_s_ms':  ModelEntry('configs/upernet_vit_deit_s_ms.py',
+                                         'upernet_vit_deit_s_ms.safetensors',
+                                         'ms', 'upernet_vit', True),
+    'uniformer_fpn_global_ms': ModelEntry('configs/uniformer_base_ms.py',
+                                          'uniformer_fpn_global_ms.safetensors',
+                                          'ms', 'uniformer', True),
+    'uniformer_xs_ms':        ModelEntry('configs/uniformer_xs_ms.py',
+                                         'uniformer_xs_ms.safetensors', 'ms',
+                                         'uniformer', True),
+    'mask2former_swin_b_ms':  ModelEntry('configs/mask2former_swin_b_ms.py',
+                                         'mask2former_swin_b_ms.safetensors',
+                                         'ms', 'mask2former', False),
+    'mask2former_swin_s_ms':  ModelEntry('configs/mask2former_swin_s_ms.py',
+                                         'mask2former_swin_s_ms.safetensors',
+                                         'ms', 'mask2former', False),
+    # === RGB (3-band) ======================================================
+    'segformer_b3_rgb':       ModelEntry('configs/segformer_b3_rgb.py',
+                                         'segformer_b3_rgb.safetensors', 'rgb',
+                                         'segformer', True),
+    'upernet_swin_t_rgb':     ModelEntry('configs/upernet_swin_t_rgb.py',
+                                         'upernet_swin_t_rgb.safetensors', 'rgb',
+                                         'upernet_swin', True),
     'upernet_vit_deit_s_rgb': ModelEntry('configs/upernet_vit_deit_s_rgb.py',
-                                         'upernet_vit_deit_s_rgb.pth', 'rgb',
-                                         'upernet_vit', True),
-    'uniformer_base_rgb':   ModelEntry('configs/uniformer_base_rgb.py',
-                                       'uniformer_base_rgb.pth', 'rgb',
-                                       'uniformer', True),
-    'mask2former_swin_s_rgb': ModelEntry('configs/mask2former_swin_s_rgb.py',
-                                         'mask2former_swin_s_rgb.pth', 'rgb',
-                                         'mask2former', False),
-    # --- light / standard variants (release if trained and validated) ---
-    'segformer_b0_ms':      ModelEntry('configs/segformer_b0_ms.py',
-                                       'segformer_b0_ms.pth', 'ms',
-                                       'segformer', True),
-    'segformer_b0_rgb':     ModelEntry('configs/segformer_b0_rgb.py',
-                                       'segformer_b0_rgb.pth', 'rgb',
-                                       'segformer', True),
-    'segformer_b2_ms':      ModelEntry('configs/segformer_b2_ms.py',
-                                       'segformer_b2_ms.pth', 'ms',
-                                       'segformer', True),
-    'segformer_b2_rgb':     ModelEntry('configs/segformer_b2_rgb.py',
-                                       'segformer_b2_rgb.pth', 'rgb',
-                                       'segformer', True),
-    'upernet_swin_t_ms':    ModelEntry('configs/upernet_swin_t_ms.py',
-                                       'upernet_swin_t_ms.pth', 'ms',
-                                       'upernet_swin', True),
-    'upernet_swin_t_rgb':   ModelEntry('configs/upernet_swin_t_rgb.py',
-                                       'upernet_swin_t_rgb.pth', 'rgb',
-                                       'upernet_swin', True),
+                                         'upernet_vit_deit_s_rgb.safetensors',
+                                         'rgb', 'upernet_vit', True),
+    'uniformer_xs_rgb':       ModelEntry('configs/uniformer_xs_rgb.py',
+                                         'uniformer_xs_rgb.safetensors', 'rgb',
+                                         'uniformer', True),
+    'mask2former_swin_t_rgb': ModelEntry('configs/mask2former_swin_t_rgb.py',
+                                         'mask2former_swin_t_rgb.safetensors',
+                                         'rgb', 'mask2former', False),
 }
 
 
 def download_checkpoint(model_id: str, cache_dir: str = 'weights',
-                        repo_id: str = None) -> str:
+                        repo_id: Optional[str] = None) -> str:
     """Download a released checkpoint from Hugging Face Hub.
 
     Returns the local path to the .pth. Requires ``huggingface_hub``.
@@ -94,7 +89,7 @@ def download_checkpoint(model_id: str, cache_dir: str = 'weights',
                        f'Known: {list(MODELS)}')
     entry = MODELS[model_id]
     repo_id = repo_id or HF_REPO_ID
-    if repo_id.startswith('CHANGE_ME'):
+    if not repo_id or repo_id.startswith('CHANGE_ME'):
         raise RuntimeError(
             'HF_REPO_ID is not set. Edit palmseg/weights_manifest.py or pass '
             'repo_id=... once the weights are uploaded to Hugging Face.')

@@ -83,3 +83,54 @@ palmseg download segformer_b5_ms
 ```
 
 Weights are licensed CC-BY-4.0; code is Apache-2.0.
+
+
+## Released models
+
+These are the weights published at `brakuta/date-palm-wv3-models` on Hugging Face,
+in `.safetensors` format (tensor-only; the format the HF security scanner reports
+as safe). `palmseg download <id>` fetches them by the weight-file name.
+
+| Model id | Architecture | Modality | Head type | Weight file |
+|----------|-------------|----------|-----------|-------------|
+| `segformer_b3_ms` | SegFormer | MS | heatmap | `segformer_b3_ms.safetensors` |
+| `segformer_b5_ms` | SegFormer | MS | heatmap | `segformer_b5_ms.safetensors` |
+| `upernet_swin_s_ms` | UPerNet+Swin | MS | heatmap | `upernet_swin_s_ms.safetensors` |
+| `upernet_swin_b_ms` | UPerNet+Swin | MS | heatmap | `upernet_swin_b_ms.safetensors` |
+| `upernet_vit_deit_s_ms` | UPerNet+ViT-DeiT | MS | heatmap | `upernet_vit_deit_s_ms.safetensors` |
+| `uniformer_fpn_global_ms` | UniFormer | MS | heatmap | `uniformer_fpn_global_ms.safetensors` |
+| `uniformer_xs_ms` | UniFormer | MS | heatmap | `uniformer_xs_ms.safetensors` |
+| `mask2former_swin_b_ms` | Mask2Former | MS | mask-only | `mask2former_swin_b_ms.safetensors` |
+| `mask2former_swin_s_ms` | Mask2Former | MS | mask-only | `mask2former_swin_s_ms.safetensors` |
+| `segformer_b3_rgb` | SegFormer | RGB | heatmap | `segformer_b3_rgb.safetensors` |
+| `upernet_swin_t_rgb` | UPerNet+Swin | RGB | heatmap | `upernet_swin_t_rgb.safetensors` |
+| `upernet_vit_deit_s_rgb` | UPerNet+ViT-DeiT | RGB | heatmap | `upernet_vit_deit_s_rgb.safetensors` |
+| `uniformer_xs_rgb` | UniFormer | RGB | heatmap | `uniformer_xs_rgb.safetensors` |
+| `mask2former_swin_t_rgb` | Mask2Former | RGB | mask-only | `mask2former_swin_t_rgb.safetensors` |
+
+Download and inspect any model:
+
+```bash
+palmseg download segformer_b5_ms
+palmseg inspect weights/segformer_b5_ms.safetensors   # channels / classes / modality
+```
+
+### UniFormer models need a custom backbone
+
+`uniformer_fpn_global_ms`, `uniformer_xs_ms`, and `uniformer_xs_rgb` use the
+`UniFormer` and `UniFormer_Light` backbones, which are not part of stock
+MMSegmentation. Register these backbone modules in your MMSeg install before
+using those models (the SegFormer, Swin, ViT-DeiT, and Mask2Former models need
+nothing extra).
+
+### Verify num_classes after download
+
+The loader reads the class count from each checkpoint. If a model was trained
+with a non-palm class count (for example a 150-class default left in a training
+config), `palmseg inspect` will report it. Confirm `num_classes: 2` for the
+binary palm task before running inference:
+
+```bash
+palmseg inspect weights/uniformer_fpn_global_ms.safetensors
+```
+
