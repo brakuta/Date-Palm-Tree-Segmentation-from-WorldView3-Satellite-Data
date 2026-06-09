@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+weights/
+work_dirs/
+out/
+data/
+*.gpkg
+*.tif
+!docs/**/*.png
+.DS_Store

@@ -1,0 +1,22 @@
+# Core deep learning (install torch matching your CUDA first; see README).
+# The toolkit was developed against the MMSegmentation tree at commit
+# b040e147 (mmseg 1.x / mmcv 2.x / mmengine).
+torch>=2.0
+mmengine>=0.10.0
+mmcv>=2.1.0,<2.2.0
+mmsegmentation>=1.2.0
+# Geospatial
+rasterio>=1.3
+geopandas>=0.13
+shapely>=2.0
+# GDAL is required by LoadSingleRSImageFromFile; install via conda
+# (conda install -c conda-forge gdal) or a matching wheel on Windows.
+# Vision / scientific
+numpy>=1.24
+opencv-python-headless>=4.7
+scipy>=1.10
+scikit-image>=0.21
+Pillow>=9.5
+tqdm>=4.65
+# Weights download
+huggingface_hub>=0.20

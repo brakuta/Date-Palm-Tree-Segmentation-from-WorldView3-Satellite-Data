@@ -1,0 +1,37 @@
+cff-version: 1.2.0
+title: "Date Palm Segmentation from WorldView-3 Satellite Data"
+message: "If you use this software, please cite it and the method reference below."
+type: software
+authors:
+  - family-names: "Gibril"
+    given-names: "Mohamed Barakat A."
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # add your ORCID
+    # affiliation: "Your institution"                   # add your affiliation
+year: 2024
+license: Apache-2.0
+repository-code: "https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data"
+references:
+  - type: article
+    title: "Spectral-Spatial transformer-based semantic segmentation for large-scale mapping of individual date palm trees using very high-resolution satellite data"
+    authors:
+      - family-names: "Al-Ruzouq"
+        given-names: "Rami"
+      - family-names: "Gibril"
+        given-names: "Mohamed Barakat A."
+      - family-names: "Shanableh"
+        given-names: "Abdallah"
+      - family-names: "Bolcek"
+        given-names: "Jan"
+      - family-names: "Lamghari"
+        given-names: "Fouad"
+      - family-names: "Hammour"
+        given-names: "Nezar Atalla"
+      - family-names: "El-Keblawy"
+        given-names: "Ali"
+      - family-names: "Jena"
+        given-names: "Ratiranjan"
+    journal: "Ecological Indicators"
+    volume: 163
+    pages: "112110"
+    year: 2024
+    doi: "10.1016/j.ecolind.2024.112110"
