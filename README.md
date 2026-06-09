@@ -13,10 +13,19 @@
 
 ---
 
-A toolkit for detecting, delineating, and counting individual date palm trees in
-WorldView-3 (8-band multispectral) and RGB imagery. It pairs transformer-based
-semantic segmentation with an instance-extraction pipeline that converts a
-segmentation into georeferenced crown polygons with per-tree attributes.
+A toolkit for detecting, delineating, and counting individual date palm trees
+(*Phoenix dactylifera* L.) in WorldView-3 (8-band multispectral) and RGB imagery.
+It pairs transformer-based semantic segmentation with an instance-extraction
+pipeline that converts a segmentation into georeferenced crown polygons with
+per-tree attributes.
+
+Date palm plantations in the United Arab Emirates are threatened by soil
+salinity, drought, and the red palm weevil, making accurate, large-scale
+inventories important for agriculture, food security, and conservation. The
+approach was developed and validated across 275 km² of WorldView-3 scenes over
+Ajman, Sharjah, and Fujairah (Al-Ruzouq et al., 2024), demonstrating that
+individual palm crowns can be mapped from satellite data despite the resolution
+limits that previously confined this task to aerial and UAV imagery.
 
 <div align="center">
 
@@ -35,6 +44,8 @@ segmentation into georeferenced crown polygons with per-tree attributes.
 - [Installation](#installation)
 - [Quick start](#quick-start)
 - [Pretrained models](#pretrained-models)
+- [Study area and data](#study-area-and-data)
+- [Reported accuracy](#reported-accuracy)
 - [Usage](#usage)
 - [Data preparation and fine-tuning](#data-preparation-and-fine-tuning)
 - [How it works](#how-it-works)
@@ -155,6 +166,44 @@ palmseg download --list          # list every model ID
 palmseg download --all           # download all released weights
 ```
 
+## Study area and data
+
+The released models were trained and evaluated on **20 multidate WorldView-3
+scenes** covering roughly **275 km²** across Ajman, Sharjah, and the Fujairah
+region (Kalba, Dibba, Masafi) in the UAE. WorldView-3 provides eight
+multispectral bands at 1.24 m and a panchromatic band at 0.31 m; the
+multispectral bands were pansharpened to 0.31 m. Ground truth was created by
+manual delineation guided by field campaigns, yielding **16,260 image tiles of
+512 × 512 px** for model development (about 1,800 held out for evaluation),
+drawn from an analysis of 76,950 individual date palm trees spanning a wide
+range of crown sizes, ages, and surrounding environments.
+
+WorldView-3 band layout (the multispectral input contract; see
+[docs/PREPROCESSING.md](docs/PREPROCESSING.md)):
+
+| Index | Band | Wavelength (nm) |
+|---|---|---|
+| 0 | Coastal | 400–450 |
+| 1 | Blue | 450–510 |
+| 2 | Green | 510–580 |
+| 3 | Yellow | 585–625 |
+| 4 | Red | 630–690 |
+| 5 | Red Edge | 705–745 |
+| 6 | NIR-1 | 770–895 |
+| 7 | NIR-2 | 860–1040 |
+
+## Reported accuracy
+
+Across architectures, using the **full eight multispectral bands** consistently
+outperformed RGB and RGB+NIR composites. In the source study the strongest
+multispectral configurations reached roughly **77–78% mIoU and 86% mean
+F-score** on the held-out test set, with UniFormer, UPerNet-Swin, and
+Mask2Former each improving by about 2% mIoU when moving from RGB to the eight-band
+input. On independent scenes from the Dibba region the leading models retained
+**83–84% mIoU and 90–91% mean F-score**, indicating good generalisation to new
+locations and acquisition dates. Per-model numbers for your own released weights
+should be recorded in [docs/MODELS.md](docs/MODELS.md).
+
 ## Usage
 
 ```bash
@@ -226,33 +275,29 @@ never silently disagree with the trained weights.
 
 ## Repository layout
 
-```
-palmseg/
-  cli.py                    palmseg command-line interface
-  doctor.py                 environment diagnostics (GDAL, CUDA, MM stack)
-  loader.py                 checkpoint-introspecting model loader (.safetensors / .pth)
-  pipeline.py               three modes: segment / extract / segment_and_extract
-  batch.py                  folder-level batch processing (resume, fault isolation)
-  inference/tiled.py        large-raster tiled inference + heatmap export
-  postprocess/
-    individual_trees.py     seeds + watershed/voronoi + delineation
-    vectorize.py            georeferenced vectoriser (+ overlap dedup)
-  datasets/palm_dataset.py  2-or-N-class dataset
-  transforms/loading.py     multispectral loader (rasterio-first, GDAL fallback)
-  tools/
-    tile_pipeline.py        mosaic + polygons -> MMSeg tiles (data prep)
-    adapt_input_stem.py     3->N channel stem adapter (fine-tune prep)
-    prep_check.py           dataset validator
-  weights_manifest.py       model registry + Hugging Face download
-configs/                    14 model configs + _base_
-scripts/
-  to_safetensors.py         convert .pth checkpoints to .safetensors
-  rename_weights.py         rename work_dir checkpoints to manifest names
-examples/make_demo_data.py  synthetic scene to try the workflow with no GPU
-tests/                      pytest suite (no GPU or weights needed)
-docs/                       INSTALL, QUICKSTART, DATA_PREPARATION, FINETUNE,
-                            PREPROCESSING, MODELS, GITHUB_SETUP, HUGGINGFACE_WEIGHTS
-```
+| Path | Description |
+|---|---|
+| [`palmseg/`](palmseg) | the Python package |
+| &nbsp;&nbsp;[`cli.py`](palmseg/cli.py) | `palmseg` command-line interface |
+| &nbsp;&nbsp;[`doctor.py`](palmseg/doctor.py) | environment diagnostics (GDAL, CUDA, MM stack) |
+| &nbsp;&nbsp;[`loader.py`](palmseg/loader.py) | checkpoint-introspecting model loader (`.safetensors` / `.pth`) |
+| &nbsp;&nbsp;[`pipeline.py`](palmseg/pipeline.py) | three modes: segment / extract / segment-and-extract |
+| &nbsp;&nbsp;[`batch.py`](palmseg/batch.py) | folder-level batch processing (resume, fault isolation) |
+| &nbsp;&nbsp;[`inference/tiled.py`](palmseg/inference/tiled.py) | large-raster tiled inference + heatmap export |
+| &nbsp;&nbsp;[`postprocess/individual_trees.py`](palmseg/postprocess/individual_trees.py) | seeds + watershed/voronoi + delineation |
+| &nbsp;&nbsp;[`postprocess/vectorize.py`](palmseg/postprocess/vectorize.py) | georeferenced vectoriser (+ overlap dedup) |
+| &nbsp;&nbsp;[`datasets/palm_dataset.py`](palmseg/datasets/palm_dataset.py) | 2-or-N-class dataset |
+| &nbsp;&nbsp;[`transforms/loading.py`](palmseg/transforms/loading.py) | multispectral loader (rasterio-first, GDAL fallback) |
+| &nbsp;&nbsp;[`tools/tile_pipeline.py`](palmseg/tools/tile_pipeline.py) | mosaic + polygons → MMSeg tiles (data prep) |
+| &nbsp;&nbsp;[`tools/adapt_input_stem.py`](palmseg/tools/adapt_input_stem.py) | 3→N channel stem adapter (fine-tune prep) |
+| &nbsp;&nbsp;[`tools/prep_check.py`](palmseg/tools/prep_check.py) | dataset validator |
+| &nbsp;&nbsp;[`weights_manifest.py`](palmseg/weights_manifest.py) | model registry + Hugging Face download |
+| [`configs/`](configs) | 14 model configs + [`_base_/`](configs/_base_) |
+| [`scripts/to_safetensors.py`](scripts/to_safetensors.py) | convert `.pth` checkpoints to `.safetensors` |
+| [`scripts/rename_weights.py`](scripts/rename_weights.py) | rename work-dir checkpoints to manifest names |
+| [`examples/make_demo_data.py`](examples/make_demo_data.py) | synthetic scene to try the workflow with no GPU |
+| [`tests/`](tests) | pytest suite (no GPU or weights needed) |
+| [`docs/`](docs) | documentation (see table below) |
 
 ## Documentation
 
@@ -264,8 +309,6 @@ docs/                       INSTALL, QUICKSTART, DATA_PREPARATION, FINETUNE,
 | [PREPROCESSING](docs/PREPROCESSING.md) | the multispectral and RGB input contracts |
 | [DATA_PREPARATION](docs/DATA_PREPARATION.md) | tiling mosaics and annotations |
 | [FINETUNE](docs/FINETUNE.md) | training on your own labels |
-| [HUGGINGFACE_WEIGHTS](docs/HUGGINGFACE_WEIGHTS.md) | publishing and downloading weights |
-| [GITHUB_SETUP](docs/GITHUB_SETUP.md) | repository setup and publishing |
 
 ## Citation
 

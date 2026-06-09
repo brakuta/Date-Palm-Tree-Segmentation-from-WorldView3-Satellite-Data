@@ -1,5 +1,19 @@
 # Released models
 
+## Modality matters: use all eight bands
+
+Across all five architectures, using the full eight WorldView-3 multispectral
+bands outperformed RGB and RGB+NIR composites. In the source study (Al-Ruzouq et
+al., 2024) the best multispectral models reached about 77-78% mIoU and 86% mean
+F-score on the held-out test set, and 83-84% mIoU with 90-91% mean F-score on
+independent Dibba-region scenes, each architecture gaining roughly 2% mIoU when
+moving from RGB to eight bands. Prefer the `_ms` models when 8-band imagery is
+available; the `_rgb` models exist for cases where only RGB is on hand.
+
+Record the test-set mIoU and mean F-score for each of your released checkpoints
+in the table below so users can choose on evidence.
+
+
 ## Choosing a model: size tiers
 
 Smaller variants use less GPU memory and run faster, which helps on limited
