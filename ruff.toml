@@ -1,0 +1,13 @@
+# Ruff configuration for palmseg.
+# Line length follows the project's existing 79-column style.
+line-length = 79
+
+[lint]
+# Enforced normally; the rules below reflect deliberate style:
+#   E702  compact one-line argparse/setup statements (e.g. cli.py subparsers)
+ignore = ["E702"]
+
+[lint.per-file-ignores]
+# Tests guard optional deps with `pytest.importorskip(...)` before importing
+# them, which necessarily places those imports after executable code (E402).
+"tests/*" = ["E402"]

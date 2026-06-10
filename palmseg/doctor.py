@@ -12,7 +12,7 @@ from __future__ import annotations
 import importlib
 import sys
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 
 GREEN, RED, YELLOW, RESET = '\033[92m', '\033[91m', '\033[93m', '\033[0m'

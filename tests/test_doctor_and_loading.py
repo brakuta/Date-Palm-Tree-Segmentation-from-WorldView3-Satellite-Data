@@ -1,7 +1,6 @@
 # Copyright (c) 2024 palmseg-wv3 authors. Licensed under Apache-2.0.
 """Tests for the doctor diagnostics and the rasterio-first RS loader."""
 import numpy as np
-import pytest
 import rasterio
 from rasterio.transform import from_origin
 

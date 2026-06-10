@@ -23,7 +23,7 @@ libraries — no PyTorch, no MMSegmentation.
 ```bash
 conda create -n palmseg python=3.10 -y
 conda activate palmseg
-pip install rasterio geopandas shapely scikit-image scipy numpy opencv-python-headless
+pip install rasterio geopandas shapely scikit-image scipy numpy opencv-python-headless safetensors huggingface_hub
 git clone https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data.git
 cd Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data
 pip install -e .

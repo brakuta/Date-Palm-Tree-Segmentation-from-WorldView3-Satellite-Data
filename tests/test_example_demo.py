@@ -3,7 +3,6 @@
 import importlib.util
 import os
 
-import pytest
 
 from palmseg.pipeline import extract
 

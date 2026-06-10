@@ -19,3 +19,5 @@ dependencies:
       - mmsegmentation>=1.2.0
       - opencv-python-headless>=4.7
       - huggingface_hub>=0.20
+      - safetensors>=0.4          # load released .safetensors weights
+      # - mmdet>=3.0.0            # only for the Mask2Former models

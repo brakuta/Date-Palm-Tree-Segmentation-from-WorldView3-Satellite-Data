@@ -810,7 +810,6 @@ def write_tile_pair(
 
 def integrity_check(output_dir: Path) -> List[str]:
     """Check for orphaned files and spatial overlap between splits."""
-    import random as _random
     warnings_out = []
 
     for split in VALID_SPLITS:
@@ -910,7 +909,8 @@ def class_pixel_balance(output_dir: Path) -> Dict:
 
 def reproducibility_record() -> Dict:
     """Capture library versions for publication reproducibility."""
-    import sys as _sys, platform as _plat
+    import sys as _sys
+    import platform as _plat
     record = {"python": _sys.version, "platform": _plat.platform()}
     for pkg in ("rasterio", "geopandas", "shapely", "numpy", "Pillow", "fiona"):
         try:
@@ -1250,7 +1250,7 @@ def main() -> None:
     t0 = time.time()
 
     print(f"\n{'='*60}")
-    print(f"  Semantic Segmentation Tiling Pipeline")
+    print("  Semantic Segmentation Tiling Pipeline")
     print(f"{'='*60}")
     print(f"  Output       : {OUTPUT_DIR}")
     print(f"  Tile size    : {TILE_SIZE} x {TILE_SIZE} px")
@@ -1272,7 +1272,7 @@ def main() -> None:
     (OUTPUT_DIR / "class_palette.json").write_text(
         json.dumps(palette, indent=2)
     )
-    print(f"  Class palette saved -> class_palette.json")
+    print("  Class palette saved -> class_palette.json")
 
     all_records  = []
     job_logs     = []
@@ -1345,7 +1345,7 @@ def main() -> None:
     print(f"  Finished in {elapsed}s")
     print(f"{'='*60}")
 
-    print(f"\n  Class pixel balance:")
+    print("\n  Class pixel balance:")
     for split in ("train", "val", "test"):
         b = balance.get(split, {})
         if not b:
@@ -1357,9 +1357,9 @@ def main() -> None:
                   f"({cinfo['pixel_pct']:>6.2f}%)")
 
     print(f"\n     Output       -> {OUTPUT_DIR}")
-    print(f"     Tile index   -> tile_index.gpkg")
-    print(f"     Class palette-> class_palette.json")
-    print(f"     Audit log    -> tiling_log.json")
+    print("     Tile index   -> tile_index.gpkg")
+    print("     Class palette-> class_palette.json")
+    print("     Audit log    -> tiling_log.json")
     print()
 
 

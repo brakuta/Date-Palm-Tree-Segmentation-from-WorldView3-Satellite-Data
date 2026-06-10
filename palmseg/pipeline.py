@@ -110,7 +110,6 @@ def extract(label_or_mask_path: str,
     Returns:
         ExtractOutputs with the vector path and tree count.
     """
-    import numpy as np
     import rasterio
     from palmseg.postprocess.individual_trees import extract_trees
     from palmseg.postprocess.vectorize import (instances_to_gdf, save_vector,
