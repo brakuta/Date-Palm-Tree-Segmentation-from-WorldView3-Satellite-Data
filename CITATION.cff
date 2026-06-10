@@ -5,8 +5,8 @@ type: software
 authors:
   - family-names: "Gibril"
     given-names: "Mohamed Barakat A."
-    # orcid: "https://orcid.org/0000-0000-0000-0000"   # add your ORCID
-    # affiliation: "Your institution"                   # add your affiliation
+    orcid: "https://orcid.org/0000-0002-6465-6231"   # add your ORCID
+    affiliation: "University of Sharjah"                   # add your affiliation
 year: 2024
 license: Apache-2.0
 repository-code: "https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data"
