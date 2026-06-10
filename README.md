@@ -56,7 +56,7 @@ limits that previously confined this task to aerial and UAV imagery.
 
 ## What it does
 
-![Example date palm segmentation: 8-band WorldView-3 input, predicted palm mask, and delineated individual crowns](docs/images/prediction_example.png)
+![Example date palm segmentation: 8-band WorldView-3 input, predicted palm mask, and delineated individual crowns](docs/images/prediction_example.jpg)
 
 *Example output: a WorldView-3 tile, the predicted palm segmentation, and the extracted individual-tree crowns.*
 
@@ -142,14 +142,14 @@ heatmap (conv-seg heads) or produces masks only (Mask2Former's query head).
 | Model ID | Architecture | Output | Size | mIoU (%) | mF-score (%) | Config | Weights |
 |---|---|---|---|---|---|---|---|
 | `segformer_b3_ms` | SegFormer | heatmap + mask | 179 MB | 76.62 | 84.98 | [`segformer_b3_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/segformer_b3_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/segformer_b3_ms.safetensors) |
-| `segformer_b5_ms` | SegFormer | heatmap + mask | 328 MB | — | — | [`segformer_b5_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/segformer_b5_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/segformer_b5_ms.safetensors) |
-| `upernet_swin_s_ms` | UPerNet + Swin | heatmap + mask | 326 MB | — | — | [`upernet_swin_s_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/upernet_swin_s_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/upernet_swin_s_ms.safetensors) |
-| `upernet_swin_b_ms` | UPerNet + Swin | heatmap + mask | 486 MB | — | — | [`upernet_swin_b_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/upernet_swin_b_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/upernet_swin_b_ms.safetensors) |
+| `segformer_b5_ms` | SegFormer | heatmap + mask | 328 MB | 76.64 | 84.99 | [`segformer_b5_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/segformer_b5_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/segformer_b5_ms.safetensors) |
+| `upernet_swin_s_ms` | UPerNet + Swin | heatmap + mask | 326 MB | 76.52 | 84.89 | [`upernet_swin_s_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/upernet_swin_s_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/upernet_swin_s_ms.safetensors) |
+| `upernet_swin_b_ms` | UPerNet + Swin | heatmap + mask | 486 MB | 77.90 | 86.02 | [`upernet_swin_b_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/upernet_swin_b_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/upernet_swin_b_ms.safetensors) |
 | `upernet_vit_deit_s_ms` | UPerNet + ViT-DeiT | heatmap + mask | 234 MB | 71.57 | 80.51 | [`upernet_vit_deit_s_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/upernet_vit_deit_s_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/upernet_vit_deit_s_ms.safetensors) |
-| `uniformer_fpn_global_ms` | UniFormer | heatmap + mask | 101 MB | 77.88 | 86.01 | [`uniformer_base_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/uniformer_base_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/uniformer_fpn_global_ms.safetensors) |
-| `uniformer_xs_ms` | UniFormer | heatmap + mask | 79 MB | — | — | [`uniformer_xs_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/uniformer_xs_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/uniformer_xs_ms.safetensors) |
-| `mask2former_swin_b_ms` | Mask2Former | mask only | 432 MB | — | — | [`mask2former_swin_b_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/mask2former_swin_b_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/mask2former_swin_b_ms.safetensors) |
-| `mask2former_swin_s_ms` | Mask2Former | mask only | 275 MB | — | — | [`mask2former_swin_s_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/mask2former_swin_s_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/mask2former_swin_s_ms.safetensors) |
+| `uniformer_fpn_global_ms` | UniFormer | heatmap + mask | 101 MB | 75.92 | 84.39 | [`uniformer_base_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/uniformer_base_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/uniformer_fpn_global_ms.safetensors) |
+| `uniformer_xs_ms` | UniFormer | heatmap + mask | 79 MB | 77.88 | 86.01 | [`uniformer_xs_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/uniformer_xs_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/uniformer_xs_ms.safetensors) |
+| `mask2former_swin_b_ms` | Mask2Former | mask only | 432 MB | 73.63 | 82.40 | [`mask2former_swin_b_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/mask2former_swin_b_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/mask2former_swin_b_ms.safetensors) |
+| `mask2former_swin_s_ms` | Mask2Former | mask only | 275 MB | 72.66 | 81.58 | [`mask2former_swin_s_ms.py`](https://github.com/brakuta/Date-Palm-Tree-Segmentation-from-WorldView3-Satellite-Data/blob/main/configs/mask2former_swin_s_ms.py) | [`.safetensors`](https://huggingface.co/brakuta/date-palm-wv3-models/blob/main/mask2former_swin_s_ms.safetensors) |
 
 ### RGB (3-band)
 
@@ -210,11 +210,11 @@ locations and acquisition dates. Per-model numbers for your own released weights
 should be recorded in [docs/MODELS.md](docs/MODELS.md).
 
 
-Accuracy is reported from Al-Ruzouq et al. (2024), Table 3, on the held-out test
-set: the eight-band result for the multispectral models and the RGB result for
-the RGB models. A dash (—) marks released size variants that were not separately
-evaluated in that table (for example SegFormer-B5, Swin-S/B, and the UniFormer-XS
-light variant); run `palmseg` on your own labelled test set to populate these.
+Accuracy is reported from Al-Ruzouq et al. (2024) on the held-out test set. The
+multispectral (`_ms`) figures are the eight-band results from Table 4; the RGB
+(`_rgb`) figures are from Table 3. A dash (—) marks a released variant not
+separately evaluated in the paper; run `palmseg` on your own labelled test set to
+populate it.
 
 ## Usage
 
