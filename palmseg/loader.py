@@ -18,17 +18,20 @@ model.
 """
 from __future__ import annotations
 
+import logging
 import os.path as osp
-from typing import Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import torch
-from mmengine.config import Config
-from mmengine.registry import init_default_scope
 
-# Importing these registers PalmDataset and LoadSingleRSImageFromFile so that
-# Config.fromfile + init_model can resolve the custom 'types'.
-from palmseg.datasets import palm_dataset  # noqa: F401
-from palmseg.transforms import loading      # noqa: F401
+if TYPE_CHECKING:                                    # type hints only
+    from mmengine.config import Config
+
+logger = logging.getLogger('palmseg.loader')
+
+# mmengine / mmseg and the custom-type registrations are imported lazily inside
+# the functions that build models, so that checkpoint INSPECTION (channels /
+# classes / modality) works on machines without the MM stack installed.
 
 
 # --- preprocessing contracts (must match training exactly) ------------------
@@ -114,11 +117,28 @@ def _find_head_num_classes(state_dict: dict) -> Optional[int]:
     return None
 
 
+def resolve_device(device: str = 'auto') -> str:
+    """Resolve 'auto' to 'cuda:0' when CUDA is available, else 'cpu'.
+
+    Any explicit device string is returned unchanged, but requesting CUDA on a
+    machine without it raises a clear error instead of a deep torch traceback.
+    """
+    if device == 'auto':
+        return 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    if device.startswith('cuda') and not torch.cuda.is_available():
+        raise RuntimeError(
+            f"device='{device}' requested but CUDA is not available. "
+            "Use --device cpu (slower) or install a CUDA-enabled torch build.")
+    return device
+
+
 def inspect_checkpoint(checkpoint_path: str) -> dict:
     """Return a summary of what a checkpoint actually contains.
 
     Keys: in_channels, num_classes, modality ('ms' | 'rgb' | 'unknown').
     """
+    if not osp.isfile(checkpoint_path):
+        raise FileNotFoundError(f'Checkpoint not found: {checkpoint_path}')
     ckpt_sd = load_state_dict_any(checkpoint_path)
     sd = _strip_state_dict(ckpt_sd)
     in_ch = _find_stem_in_channels(sd)
@@ -191,6 +211,11 @@ def build_inference_config(checkpoint_path: str,
             'Pass the matching config from configs/; its num_classes / '
             'in_channels / preprocessor will be auto-corrected to the '
             'checkpoint.')
+    from mmengine.config import Config
+    # Registers PalmDataset and LoadSingleRSImageFromFile so Config.fromfile +
+    # init_model can resolve the custom 'types'.
+    from palmseg.datasets import palm_dataset    # noqa: F401
+    from palmseg.transforms import loading        # noqa: F401
     info = inspect_checkpoint(checkpoint_path)
     cfg = Config.fromfile(config_path)
     cfg.work_dir = './work_dirs'
@@ -209,36 +234,88 @@ def build_inference_config(checkpoint_path: str,
     return cfg, info
 
 
+def _verified_load(model, state: dict, checkpoint_path: str) -> None:
+    """Load a flat parameter dict into a built model and VERIFY the result.
+
+    ``strict=False`` loading can silently leave parts of the network at random
+    initialisation when the config does not match the checkpoint (e.g. a wrong
+    backbone depth), producing a model that runs but predicts garbage. This
+    helper compares the two key sets and tensor shapes explicitly and raises a
+    diagnosable error on any real mismatch.
+    """
+    model_sd = model.state_dict()
+    ignorable = ('num_batches_tracked',)
+
+    missing = [k for k in model_sd
+               if k not in state and not k.endswith(ignorable)]
+    unexpected = [k for k in state
+                  if k not in model_sd and not k.endswith(ignorable)]
+    mismatched = [
+        (k, tuple(state[k].shape), tuple(model_sd[k].shape))
+        for k in state
+        if k in model_sd and tuple(state[k].shape) != tuple(model_sd[k].shape)
+    ]
+    if missing or mismatched:
+        def _head(items, n=5):
+            shown = ', '.join(str(i) for i in items[:n])
+            more = f' (+{len(items) - n} more)' if len(items) > n else ''
+            return shown + more
+        parts = []
+        if missing:
+            parts.append(f'{len(missing)} parameter(s) missing from the '
+                         f'checkpoint: {_head(missing)}')
+        if mismatched:
+            parts.append(f'{len(mismatched)} shape mismatch(es) '
+                         f'(checkpoint vs config): {_head(mismatched, 3)}')
+        raise RuntimeError(
+            f'Config/checkpoint mismatch loading {checkpoint_path}: '
+            + '; '.join(parts)
+            + '. The config architecture (backbone depths/widths) must match '
+              'the run that produced the checkpoint - pass the correct '
+              '--config, or fix the backbone block in the config.')
+    if unexpected:
+        logger.warning('%d checkpoint key(s) not used by the model '
+                       '(first: %s)', len(unexpected), unexpected[0])
+    model.load_state_dict(
+        {k: v for k, v in state.items() if k in model_sd}, strict=False)
+
+
 def load_palm_model(checkpoint_path: str,
                     config_path: Optional[str] = None,
-                    device: str = 'cuda:0',
+                    device: str = 'auto',
                     override: bool = True):
     """Load a released palm model ready for inference.
 
     Returns an mmseg model (via mmseg.apis.init_model) with num_classes,
-    input channels and preprocessing reconciled to the checkpoint.
+    input channels and preprocessing reconciled to the checkpoint. Loaded
+    weights are verified against the built architecture; a config that does
+    not match the checkpoint raises instead of silently producing a partially
+    initialised model.
+
+    Args:
+        device: 'auto' (default) resolves to cuda:0 when available, else cpu.
 
     Example:
         model = load_palm_model(
-            'weights/segformer_b5_ms.pth',
-            'configs/segformer_b5_ms.py',
-            device='cuda:0')
+            'weights/segformer_b5_ms.safetensors',
+            'configs/segformer_b5_ms.py')
     """
+    from mmengine.registry import init_default_scope
     from mmseg.apis import init_model
 
     if not osp.isfile(checkpoint_path):
         raise FileNotFoundError(f'Checkpoint not found: {checkpoint_path}')
+    device = resolve_device(device)
     init_default_scope('mmseg')
     cfg, info = build_inference_config(checkpoint_path, config_path, override)
 
     if _is_safetensors(checkpoint_path):
         # safetensors holds raw tensors only and cannot be passed to
         # init_model's pickle-based loader. Build the architecture first, then
-        # load the parameter dict explicitly.
-        from mmengine.runner.checkpoint import load_state_dict
+        # load the parameter dict with explicit verification.
         model = init_model(cfg, None, device=device)
         state = load_state_dict_any(checkpoint_path)
-        load_state_dict(model, state, strict=False)
+        _verified_load(model, state, checkpoint_path)
         from palmseg.datasets.palm_dataset import PALM_CLASSES, PALM_PALETTE
         model.dataset_meta = dict(classes=PALM_CLASSES, palette=PALM_PALETTE)
         model.to(device).eval()

@@ -62,6 +62,8 @@ def segment(model,
     Returns paths and stats. Does not extract trees.
     """
     from palmseg.inference.tiled import infer_raster, TileInferConfig
+    if not osp.isfile(raster_path):
+        raise FileNotFoundError(f'Input raster not found: {raster_path}')
     os.makedirs(out_dir, exist_ok=True)
     stem = stem or osp.splitext(osp.basename(raster_path))[0]
     label_path = osp.join(out_dir, f'{stem}_label.tif')
@@ -111,6 +113,11 @@ def extract(label_or_mask_path: str,
         ExtractOutputs with the vector path and tree count.
     """
     import rasterio
+    if not osp.isfile(label_or_mask_path):
+        raise FileNotFoundError(f'Label/mask raster not found: '
+                                f'{label_or_mask_path}')
+    if heatmap_path and not osp.isfile(heatmap_path):
+        raise FileNotFoundError(f'Heatmap raster not found: {heatmap_path}')
     from palmseg.postprocess.individual_trees import extract_trees
     from palmseg.postprocess.vectorize import (instances_to_gdf, save_vector,
                                                 deduplicate_overlaps)
@@ -134,6 +141,12 @@ def extract(label_or_mask_path: str,
     palm_mask = (label == palm_class)
     if not palm_mask.any() and label.max() == 1:
         palm_mask = (label == 1)
+    if not palm_mask.any():
+        logger.warning(
+            'extract: no pixels of class %d (or 1) in %s; values present: %s. '
+            'An empty layer will be written - check --palm-class if this is '
+            'unexpected.', palm_class, label_or_mask_path,
+            sorted(int(v) for v in set(label.ravel()[::max(1, label.size // 100000)])))
 
     res = extract_trees(palm_mask, prob, method=method, blur_ksize=blur_ksize,
                         prob_threshold=prob_threshold, min_area_px=min_area_px,

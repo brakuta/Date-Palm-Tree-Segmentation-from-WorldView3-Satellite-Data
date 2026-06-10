@@ -82,7 +82,8 @@ def download_checkpoint(model_id: str, cache_dir: str = 'weights',
                         repo_id: Optional[str] = None) -> str:
     """Download a released checkpoint from Hugging Face Hub.
 
-    Returns the local path to the .pth. Requires ``huggingface_hub``.
+    Returns the local path to the downloaded checkpoint file
+    (``.safetensors`` for the released models). Requires ``huggingface_hub``.
     """
     if model_id not in MODELS:
         raise KeyError(f'Unknown model id "{model_id}". '
@@ -104,6 +105,8 @@ def download_checkpoint(model_id: str, cache_dir: str = 'weights',
 
 
 def resolve_config(model_id: str) -> str:
+    if model_id not in MODELS:
+        raise KeyError(f'Unknown model id "{model_id}". Known: {list(MODELS)}')
     return MODELS[model_id].config
 
 

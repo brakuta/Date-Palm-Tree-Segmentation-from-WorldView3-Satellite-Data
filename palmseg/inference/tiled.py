@@ -99,13 +99,21 @@ def infer_raster(model,
 
     Returns a stats dict. ``out_prob_path`` may be None to skip the heatmap.
     """
-    from mmseg.apis import inference_model
     cfg = cfg or TileInferConfig()
+    if cfg.tile_size <= 0:
+        raise ValueError(f'tile_size must be positive, got {cfg.tile_size}')
+    if cfg.overlap < 0:
+        raise ValueError(f'overlap must be >= 0, got {cfg.overlap}')
     modality = cfg.modality or getattr(model, 'cfg_info', {}).get('modality',
                                                                   'ms')
     ts, stride = cfg.tile_size, cfg.tile_size - cfg.overlap
     if stride <= 0:
         raise ValueError('overlap must be smaller than tile_size')
+    if not osp.isfile(raster_path):
+        raise FileNotFoundError(f'Input raster not found: {raster_path}')
+    # Heavy import deferred until inputs are known-good, so bad paths and
+    # bad configs fail instantly even before MMSegmentation loads.
+    from mmseg.apis import inference_model
 
     with rasterio.open(raster_path) as src:
         H, W = src.height, src.width
@@ -144,13 +152,21 @@ def infer_raster(model,
                         import torch
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
-                        result = inference_model(model, tile)
+                        # Retry with the SAME prepared input. Re-running the
+                        # raw `tile` here would feed RGB models un-reversed
+                        # channels and silently corrupt retried tiles.
+                        result = inference_model(model, model_input)
                     else:
                         raise
 
                 logits = result.seg_logits.data            # (C, ts, ts)
                 if n_classes is None:
                     n_classes = _num_classes_from_logits(logits)
+                    if cfg.write_heatmap and cfg.palm_class >= n_classes:
+                        raise ValueError(
+                            f'palm_class={cfg.palm_class} is out of range for '
+                            f'a {n_classes}-class model (valid: 0..'
+                            f'{n_classes - 1}).')
                     _check_memory(H, W, n_classes, cfg.max_accumulator_gb)
                     prob_acc = np.zeros((n_classes, H, W), dtype=np.float32)
 
@@ -170,19 +186,20 @@ def infer_raster(model,
         raise RuntimeError('No valid tiles were processed (all nodata?).')
 
     nz = weight_acc > 0
-    # Normalise blended per-class probability where covered.
-    prob_norm = np.zeros_like(prob_acc)
-    prob_norm[:, nz] = prob_acc[:, nz] / weight_acc[nz]
+    # Normalise blended per-class probability IN PLACE where covered. This
+    # avoids allocating a second (C, H, W) float32 array, which would double
+    # the peak memory relative to the _check_memory budget.
+    prob_acc[:, nz] /= weight_acc[nz]
     # Label is the argmax of the blended probabilities, consistent with the
     # exported heatmap. Uncovered pixels stay background.
     label = np.zeros((H, W), dtype=np.uint8)
-    label[nz] = np.argmax(prob_norm[:, nz], axis=0).astype(np.uint8)
+    label[nz] = np.argmax(prob_acc[:, nz], axis=0).astype(np.uint8)
 
     _write_single_band(out_label_path, label, profile, transform, crs,
                        'uint8')
     out_prob_written = None
     if cfg.write_heatmap and out_prob_path is not None:
-        palm_prob = prob_norm[cfg.palm_class]
+        palm_prob = prob_acc[cfg.palm_class]
         _write_single_band(out_prob_path, palm_prob, profile, transform, crs,
                            'float32')
         out_prob_written = out_prob_path

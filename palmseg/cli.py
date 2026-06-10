@@ -89,9 +89,19 @@ def _cmd_selftest(args):
 
 
 # --- (a) segment ------------------------------------------------------------
+def _require_path(path, kind, is_dir=False):
+    import os.path as osp
+    if path and not (osp.isdir(path) if is_dir else osp.isfile(path)):
+        raise SystemExit(f'{kind} not found: {path}')
+
+
 def _cmd_segment(args):
     if not args.input and not args.input_dir:
         raise SystemExit('Provide --input <file> or --input-dir <folder>.')
+    # Fail fast on bad paths BEFORE the (slow) model load.
+    _require_path(args.input, 'Input raster')
+    _require_path(args.input_dir, 'Input folder', is_dir=True)
+    _require_path(args.checkpoint, 'Checkpoint')
     from palmseg.loader import load_palm_model
     model = load_palm_model(args.checkpoint, _resolve_config(args),
                             device=args.device)
@@ -117,6 +127,9 @@ def _cmd_segment(args):
 def _cmd_extract(args):
     if not args.label and not args.input_dir:
         raise SystemExit('Provide --label <file> or --input-dir <folder>.')
+    _require_path(args.label, 'Label raster')
+    _require_path(args.heatmap, 'Heatmap raster')
+    _require_path(args.input_dir, 'Input folder', is_dir=True)
     if args.input_dir:
         from palmseg.batch import batch_extract
         res = batch_extract(args.input_dir, args.out, heatmap_dir=args.heatmap_dir,
@@ -148,6 +161,9 @@ def _cmd_extract(args):
 def _cmd_seg_extract(args):
     if not args.input and not args.input_dir:
         raise SystemExit('Provide --input <file> or --input-dir <folder>.')
+    _require_path(args.input, 'Input raster')
+    _require_path(args.input_dir, 'Input folder', is_dir=True)
+    _require_path(args.checkpoint, 'Checkpoint')
     from palmseg.loader import load_palm_model
     model = load_palm_model(args.checkpoint, _resolve_config(args),
                             device=args.device)
@@ -202,6 +218,9 @@ def _cmd_download(args):
             tag = 'heatmap' if v.heatmap_capable else 'mask-only'
             print(f'  {k:24s} {v.modality:3s} {v.family:14s} [{tag}]')
         return
+    if not args.all and not args.model_id:
+        raise SystemExit('Provide a model id, --all, or --list '
+                         '(see `palmseg download --list`).')
     ids = list(MODELS) if args.all else [args.model_id]
     for mid in ids:
         print(f'{mid} -> {download_checkpoint(mid, args.cache_dir, args.repo_id)}')
@@ -211,7 +230,8 @@ def _add_model_args(s, device=True):
     s.add_argument('--checkpoint', required=True)
     s.add_argument('--config'); s.add_argument('--model')
     if device:
-        s.add_argument('--device', default='cuda:0')
+        s.add_argument('--device', default='auto',
+                       help="'auto' (cuda if available, else cpu), 'cpu', 'cuda:N'")
 
 
 def _add_seg_args(s):
@@ -316,8 +336,25 @@ def build_parser():
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
-    _setup_logging(getattr(args, 'verbose', False))
-    args.func(args)
+    verbose = getattr(args, 'verbose', False)
+    _setup_logging(verbose)
+    try:
+        args.func(args)
+    except SystemExit:
+        raise                                   # already a clean exit
+    except KeyboardInterrupt:
+        print('\ninterrupted', file=sys.stderr)
+        sys.exit(130)
+    except (FileNotFoundError, ValueError, KeyError, MemoryError,
+            RuntimeError, ImportError, OSError) as exc:
+        # Operational errors: print one actionable line, full traceback only
+        # in verbose mode, and exit non-zero for scripts/schedulers.
+        if verbose:
+            logging.getLogger('palmseg').exception('command failed')
+        print(f'error: {exc}', file=sys.stderr)
+        if not verbose:
+            print('(re-run with -v for the full traceback)', file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':

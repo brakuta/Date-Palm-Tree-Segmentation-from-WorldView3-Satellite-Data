@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install linter
+        run: pip install ruff
+
+      - name: Lint
+        run: ruff check .
+
+      # Lightweight test dependencies. The MMSegmentation/MMCV stack is not
+      # installed here, so model-loading tests guarded by importorskip are
+      # skipped; everything else (raster I/O, extraction, vectorisation,
+      # tiled stitching, stem adapter, diagnostics, hardening checks) runs.
+      - name: Install test dependencies
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy scipy scikit-image pillow shapely \
+                      rasterio geopandas safetensors pytest
+          pip install -e .
+
+      - name: Run tests
+        run: pytest -q
