@@ -52,14 +52,14 @@ palmseg extract --label demo/scene_label.tif --out demo/trees_maskonly.gpkg \
 
 ## Step 3 — get a real model
 
-Set `HF_REPO_ID` in `palmseg/weights_manifest.py` (once weights are uploaded),
-then:
+Released weights are hosted on Hugging Face at `brakuta/date-palm-wv3-models`
+(already configured in `palmseg/weights_manifest.py`):
 
 ```bash
 palmseg download --list                 # see available model ids
 palmseg download segformer_b5_ms        # downloads to weights/
-palmseg inspect weights/segformer_b5_ms.pth
-palmseg selftest --model segformer_b5_ms --checkpoint weights/segformer_b5_ms.pth
+palmseg inspect weights/segformer_b5_ms.safetensors
+palmseg selftest --model segformer_b5_ms --checkpoint weights/segformer_b5_ms.safetensors
 ```
 
 `inspect` should report `in_channels: 8`, `num_classes: 2`, `modality: ms`.
@@ -71,7 +71,7 @@ On your own georeferenced scene (8-band for `_ms` models, 3-band for `_rgb`):
 ```bash
 palmseg segment \
   --model      segformer_b5_ms \
-  --checkpoint weights/segformer_b5_ms.pth \
+  --checkpoint weights/segformer_b5_ms.safetensors \
   --input      my_scene.tif \
   --out        out/
 # writes out/my_scene_label.tif and out/my_scene_prob.tif
@@ -83,7 +83,7 @@ palmseg segment \
 ```bash
 palmseg segment-and-extract \
   --model      segformer_b5_ms \
-  --checkpoint weights/segformer_b5_ms.pth \
+  --checkpoint weights/segformer_b5_ms.safetensors \
   --input      my_scene.tif \
   --out        out/
 # writes label, heatmap, and out/my_scene_trees.gpkg
@@ -98,7 +98,7 @@ summary.
 
 ```bash
 # (a) segment every raster in a folder
-palmseg segment --model segformer_b5_ms --checkpoint weights/segformer_b5_ms.pth \
+palmseg segment --model segformer_b5_ms --checkpoint weights/segformer_b5_ms.safetensors \
                 --input-dir scenes/ --out out/ --summary-csv out/segment_summary.csv
 
 # (b) extract trees for every label raster in a folder (heatmaps matched by name:
@@ -108,7 +108,7 @@ palmseg extract --input-dir out/ --heatmap-dir out/ --pattern "*_label.tif" \
 
 # (c) end-to-end over a folder
 palmseg segment-and-extract --model segformer_b5_ms \
-                --checkpoint weights/segformer_b5_ms.pth \
+                --checkpoint weights/segformer_b5_ms.safetensors \
                 --input-dir scenes/ --out out/ --summary-csv out/batch_summary.csv
 ```
 

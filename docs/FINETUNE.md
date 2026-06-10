@@ -70,7 +70,7 @@ model = dict(decode_head=dict(num_classes=num_classes))
 # UPerNet/ViT models also have an auxiliary_head -> set its num_classes too.
 
 # (c) start from a released checkpoint (or your adapted ImageNet stem)
-load_from = 'weights/segformer_b5_ms.pth'
+load_from = 'weights/segformer_b5_ms.safetensors'
 
 # (d) shorter schedule + lower LR for fine-tuning
 train_cfg = dict(max_iters=20000, val_interval=2000)
@@ -102,9 +102,10 @@ python tools/train.py configs/finetune_palm_ms.py
 Inference and tree-counting are identical to the released models:
 
 ```bash
-palmseg infer --config configs/finetune_palm_ms.py \
+palmseg segment-and-extract \
+              --config     configs/finetune_palm_ms.py \
               --checkpoint work_dirs/finetune_palm_ms/iter_20000.pth \
-              --input new_scene.tif --out out/
-palmseg count-trees --label out/new_scene_label.tif \
-              --prob out/new_scene_prob.tif --out out/new_scene_trees.gpkg
+              --input      new_scene.tif --out out/
+# writes out/new_scene_label.tif, out/new_scene_prob.tif,
+# and out/new_scene_trees.gpkg
 ```
