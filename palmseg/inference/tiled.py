@@ -61,11 +61,20 @@ def _read_tile(ds, x: int, y: int, ts: int):
     arr = ds.read(window=window, boundless=True, fill_value=0)  # (C, ts, ts)
     tile = np.ascontiguousarray(np.transpose(arr, (1, 2, 0))).astype(np.float32)
     # Valid mask from nodata, if defined; else everything in-bounds is valid.
+    # Float products often declare nodata as NaN, for which an equality test
+    # is always False, so NaN nodata is handled explicitly.
     nodata = ds.nodata
-    if nodata is not None:
+    if nodata is not None and np.isnan(nodata):
+        valid = ~np.all(np.isnan(arr), axis=0)
+    elif nodata is not None:
         valid = ~np.all(arr == nodata, axis=0)
     else:
         valid = np.ones((arr.shape[1], arr.shape[2]), dtype=bool)
+    # Never feed NaN/Inf to the model: such pixels are already weighted out of
+    # the stitched output via `valid`, but they would still propagate through
+    # convolutions and poison neighbouring predictions within the tile.
+    if not np.isfinite(tile).all():
+        tile = np.nan_to_num(tile, nan=0.0, posinf=0.0, neginf=0.0)
     return tile, valid
 
 

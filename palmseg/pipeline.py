@@ -160,7 +160,8 @@ def extract(label_or_mask_path: str,
 
     if write_instance_raster:
         prof = profile.copy()
-        prof.update(count=1, dtype='int32', compress='deflate')
+        prof.update(count=1, dtype='int32', compress='deflate', tiled=True,
+                    blockxsize=256, blockysize=256)
         prof.pop('nodata', None)
         os.makedirs(osp.dirname(osp.abspath(write_instance_raster)),
                     exist_ok=True)

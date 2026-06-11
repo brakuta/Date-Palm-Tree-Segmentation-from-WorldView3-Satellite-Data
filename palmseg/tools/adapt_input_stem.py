@@ -96,7 +96,9 @@ def adapt_checkpoint(in_path: str, out_path: str, new_in: int = 8,
                      strategy: str = 'band_map', stem_key: Optional[str] = None,
                      band_map: Optional[Sequence[Optional[int]]] = WV3_8BAND_RGB_MAP,
                      scale: bool = False) -> str:
-    ckpt = torch.load(in_path, map_location='cpu')
+    # weights_only=False: mmengine checkpoints carry pickled meta; this tool
+    # runs on the user's own local checkpoint (same rationale as the loader).
+    ckpt = torch.load(in_path, map_location='cpu', weights_only=False)
     state_dict, container, sd_key = _unwrap(deepcopy(ckpt))
     key = stem_key or find_stem_key(state_dict, orig_in=3)
     old_w = state_dict[key]

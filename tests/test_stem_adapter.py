@@ -20,7 +20,7 @@ def test_stem_autodetect_and_bandmap(key, tmp_path):
     dst = tmp_path / 'out.pth'
     torch.save(ckpt, src)
     A.adapt_checkpoint(str(src), str(dst), new_in=8, strategy='band_map')
-    w = torch.load(dst)['state_dict'][key]
+    w = torch.load(dst, weights_only=False)['state_dict'][key]
     assert tuple(w.shape) == (64, 8, 7, 7)
     orig = ckpt['state_dict'][key]
     # RGB kernels placed at WV-3 band indices: Red=4<-R0, Blue=1<-B2, Green=2<-G1
@@ -37,7 +37,7 @@ def test_mean_strategy_scale(tmp_path):
     src = tmp_path / 'i.pth'; dst = tmp_path / 'o.pth'
     torch.save(ckpt, src)
     A.adapt_checkpoint(str(src), str(dst), new_in=8, strategy='mean', scale=True)
-    w = torch.load(dst)['state_dict'][key]
+    w = torch.load(dst, weights_only=False)['state_dict'][key]
     assert tuple(w.shape) == (32, 8, 4, 4)
 
 
@@ -47,6 +47,6 @@ def test_zero_strategy_keeps_rgb(tmp_path):
     src = tmp_path / 'i.pth'; dst = tmp_path / 'o.pth'
     torch.save(ckpt, src)
     A.adapt_checkpoint(str(src), str(dst), new_in=8, strategy='zero')
-    w = torch.load(dst)['state_dict'][key]
+    w = torch.load(dst, weights_only=False)['state_dict'][key]
     assert torch.allclose(w[:, :3], ckpt['state_dict'][key])
     assert torch.count_nonzero(w[:, 3:]) == 0

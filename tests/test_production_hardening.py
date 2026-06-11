@@ -120,3 +120,19 @@ def test_resolve_device_auto_falls_back_to_cpu():
         assert dev == 'cpu'
         with pytest.raises(RuntimeError, match='CUDA is not available'):
             resolve_device('cuda:0')
+
+
+# --- NaN-nodata handling in tiled reads --------------------------------------
+def test_read_tile_nan_nodata(tmp_path):
+    rasterio = pytest.importorskip('rasterio')
+    from palmseg.inference.tiled import _read_tile
+    path = str(tmp_path / 'nan_nodata.tif')
+    arr = np.full((3, 16, 16), 0.5, dtype='float32')
+    arr[:, :4, :] = np.nan                          # nodata strip
+    with rasterio.open(path, 'w', driver='GTiff', height=16, width=16,
+                       count=3, dtype='float32', nodata=float('nan')) as dst:
+        dst.write(arr)
+    with rasterio.open(path) as ds:
+        tile, valid = _read_tile(ds, 0, 0, 16)
+    assert not valid[:4, :].any() and valid[4:, :].all()
+    assert np.isfinite(tile).all()                  # no NaN reaches the model
